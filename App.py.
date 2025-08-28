@@ -1,103 +1,128 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+from io import StringIO
 
-# --- Initialize session state ---
+# --- App Title ---
+st.title("🏋️ Personal Training & Nutrition Log")
+
+# --- Session State for Data ---
 if "workouts" not in st.session_state:
-    st.session_state["workouts"] = pd.DataFrame(columns=["Date", "Exercise", "Sets", "Reps", "Weight (kg)", "Run Distance (km)", "Run Time (min)"])
-
+    st.session_state.workouts = []
 if "nutrition" not in st.session_state:
-    st.session_state["nutrition"] = pd.DataFrame(columns=["Date", "Calories", "Protein (g)", "Carbs (g)", "Fat (g)", "Hydration (L)"])
-
+    st.session_state.nutrition = []
 if "metrics" not in st.session_state:
-    st.session_state["metrics"] = pd.DataFrame(columns=["Date", "Weight (kg)", "Body Fat (%)", "Waist (cm)"])
+    st.session_state.metrics = []
 
 # --- Sidebar Navigation ---
-st.sidebar.title("Training & Nutrition Log")
-page = st.sidebar.radio("Go to", ["Workout Log", "Nutrition Log", "Body Metrics", "Dashboard", "Export Data"])
+page = st.sidebar.radio("Navigate", ["Log Workout", "Log Nutrition", "Log Body Metrics", "Dashboard", "Export Data"])
 
-# --- Workout Log ---
-if page == "Workout Log":
-    st.title("🏋️ Workout Log")
+# --- Workout Logging ---
+if page == "Log Workout":
+    st.header("Log Workout")
+    date = st.date_input("Date")
+    exercise = st.text_input("Exercise Name")
+    sets = st.number_input("Sets", min_value=1, value=3)
+    reps = st.number_input("Reps", min_value=1, value=10)
+    weight = st.number_input("Weight (kg)", min_value=0.0, value=0.0)
+    run_distance = st.number_input("Run Distance (km)", min_value=0.0, value=0.0)
+    run_time = st.number_input("Run Time (minutes)", min_value=0.0, value=0.0)
 
-    with st.form("workout_form"):
-        date = st.date_input("Date")
-        exercise = st.text_input("Exercise Name")
-        sets = st.number_input("Sets", min_value=1, value=3)
-        reps = st.number_input("Reps", min_value=1, value=8)
-        weight = st.number_input("Weight (kg)", min_value=0.0, value=0.0)
-        run_distance = st.number_input("Run Distance (km)", min_value=0.0, value=0.0)
-        run_time = st.number_input("Run Time (min)", min_value=0.0, value=0.0)
-        submitted = st.form_submit_button("Add Workout")
+    if st.button("Save Workout"):
+        st.session_state.workouts.append({
+            "date": date,
+            "exercise": exercise,
+            "sets": sets,
+            "reps": reps,
+            "weight": weight,
+            "run_distance": run_distance,
+            "run_time": run_time
+        })
+        st.success("Workout logged!")
 
-    if submitted:
-        new_row = pd.DataFrame([[date, exercise, sets, reps, weight, run_distance, run_time]],
-                               columns=st.session_state["workouts"].columns)
-        st.session_state["workouts"] = pd.concat([st.session_state["workouts"], new_row], ignore_index=True)
+    if st.session_state.workouts:
+        st.subheader("Workout History")
+        df = pd.DataFrame(st.session_state.workouts)
+        st.dataframe(df)
 
-    st.subheader("Workout History")
-    st.dataframe(st.session_state["workouts"])
+# --- Nutrition Logging ---
+elif page == "Log Nutrition":
+    st.header("Log Nutrition")
+    date = st.date_input("Date", key="nutrition_date")
+    calories = st.number_input("Calories", min_value=0, value=2000)
+    protein = st.number_input("Protein (g)", min_value=0, value=100)
+    carbs = st.number_input("Carbs (g)", min_value=0, value=200)
+    fats = st.number_input("Fats (g)", min_value=0, value=70)
+    water = st.number_input("Water Intake (L)", min_value=0.0, value=2.0)
 
-# --- Nutrition Log ---
-elif page == "Nutrition Log":
-    st.title("🥗 Nutrition Log")
+    if st.button("Save Nutrition"):
+        st.session_state.nutrition.append({
+            "date": date,
+            "calories": calories,
+            "protein": protein,
+            "carbs": carbs,
+            "fats": fats,
+            "water": water
+        })
+        st.success("Nutrition logged!")
 
-    with st.form("nutrition_form"):
-        date = st.date_input("Date")
-        calories = st.number_input("Calories", min_value=0, value=2000)
-        protein = st.number_input("Protein (g)", min_value=0, value=150)
-        carbs = st.number_input("Carbs (g)", min_value=0, value=200)
-        fat = st.number_input("Fat (g)", min_value=0, value=60)
-        hydration = st.number_input("Hydration (L)", min_value=0.0, value=2.0)
-        submitted = st.form_submit_button("Add Nutrition")
+    if st.session_state.nutrition:
+        st.subheader("Nutrition History")
+        df = pd.DataFrame(st.session_state.nutrition)
+        st.dataframe(df)
 
-    if submitted:
-        new_row = pd.DataFrame([[date, calories, protein, carbs, fat, hydration]],
-                               columns=st.session_state["nutrition"].columns)
-        st.session_state["nutrition"] = pd.concat([st.session_state["nutrition"], new_row], ignore_index=True)
+# --- Body Metrics Logging ---
+elif page == "Log Body Metrics":
+    st.header("Log Body Metrics")
+    date = st.date_input("Date", key="metrics_date")
+    weight = st.number_input("Weight (kg)", min_value=0.0, value=70.0)
+    body_fat = st.number_input("Body Fat (%)", min_value=0.0, value=15.0)
+    waist = st.number_input("Waist (cm)", min_value=0.0, value=80.0)
 
-    st.subheader("Nutrition History")
-    st.dataframe(st.session_state["nutrition"])
+    if st.button("Save Metrics"):
+        st.session_state.metrics.append({
+            "date": date,
+            "weight": weight,
+            "body_fat": body_fat,
+            "waist": waist
+        })
+        st.success("Metrics logged!")
 
-# --- Body Metrics ---
-elif page == "Body Metrics":
-    st.title("📊 Body Metrics")
-
-    with st.form("metrics_form"):
-        date = st.date_input("Date")
-        weight = st.number_input("Weight (kg)", min_value=0.0, value=66.9)
-        bodyfat = st.number_input("Body Fat (%)", min_value=0.0, value=15.0)
-        waist = st.number_input("Waist (cm)", min_value=0.0, value=80.0)
-        submitted = st.form_submit_button("Add Metrics")
-
-    if submitted:
-        new_row = pd.DataFrame([[date, weight, bodyfat, waist]],
-                               columns=st.session_state["metrics"].columns)
-        st.session_state["metrics"] = pd.concat([st.session_state["metrics"], new_row], ignore_index=True)
-
-    st.subheader("Metrics History")
-    st.dataframe(st.session_state["metrics"])
+    if st.session_state.metrics:
+        st.subheader("Metrics History")
+        df = pd.DataFrame(st.session_state.metrics)
+        st.dataframe(df)
 
 # --- Dashboard ---
 elif page == "Dashboard":
-    st.title("📈 Dashboard")
-
-    if not st.session_state["metrics"].empty:
-        st.subheader("Weight Over Time")
-        st.line_chart(st.session_state["metrics"][["Date", "Weight (kg)"]].set_index("Date"))
-
-        st.subheader("Body Fat % Over Time")
-        st.line_chart(st.session_state["metrics"][["Date", "Body Fat (%)"]].set_index("Date"))
-
-    if not st.session_state["nutrition"].empty:
-        st.subheader("Calories Over Time")
-        st.line_chart(st.session_state["nutrition"][["Date", "Calories"]].set_index("Date"))
+    st.header("📊 Dashboard & Trends")
+    if st.session_state.metrics:
+        df = pd.DataFrame(st.session_state.metrics)
+        df["lean_mass"] = df["weight"] * (1 - df["body_fat"]/100)
+        fig, ax = plt.subplots()
+        ax.plot(df["date"], df["weight"], label="Weight (kg)")
+        ax.plot(df["date"], df["lean_mass"], label="Lean Mass (kg)")
+        ax.set_ylabel("Kg")
+        ax.legend()
+        st.pyplot(fig)
+        st.subheader("Latest Metrics")
+        st.write(df.tail(1))
+    else:
+        st.info("Log some metrics to see trends here.")
 
 # --- Export Data ---
 elif page == "Export Data":
-    st.title("💾 Export Data")
+    st.header("💾 Export All Data to CSV")
 
-    st.write("Download your logs as CSV files:")
-    st.download_button("Download Workouts", st.session_state["workouts"].to_csv(index=False), "workouts.csv")
-    st.download_button("Download Nutrition", st.session_state["nutrition"].to_csv(index=False), "nutrition.csv")
-    st.download_button("Download Metrics", st.session_state["metrics"].to_csv(index=False), "metrics.csv")
+    def convert_df(data):
+        return pd.DataFrame(data).to_csv(index=False).encode('utf-8')
+
+    if st.session_state.workouts:
+        st.download_button("Download Workouts CSV", convert_df(st.session_state.workouts), "workouts.csv")
+    if st.session_state.nutrition:
+        st.download_button("Download Nutrition CSV", convert_df(st.session_state.nutrition), "nutrition.csv")
+    if st.session_state.metrics:
+        st.download_button("Download Metrics CSV", convert_df(st.session_state.metrics), "metrics.csv")
+
+    if not (st.session_state.workouts or st.session_state.nutrition or st.session_state.metrics):
+        st.info("No data to export yet.")
